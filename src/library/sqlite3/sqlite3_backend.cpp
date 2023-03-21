@@ -5,25 +5,16 @@
  * Few windows specific bugs fixed by Axel Schmidt.
  * 
  * See LICENSE for copyright information. */
-#include "compatibility.hpp"
 #include "sqlite3.hpp"
 #include "sqlite3.h"
 
 #include <string>
-#ifdef HAVE_LIBSQLITE3
-#ifdef _MSC_VER
-#include <windows.h>
-#define usleep( microsec )  ::Sleep( (microsec)/1000 )
-#else
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#endif
+#include <thread>
+#include <chrono>
 
 using namespace litesql;
 using std::string;
 using std::vector;
-
 
 /** SQLite3 - result */
 class SQLite3::Result : public Backend::Result {
@@ -76,16 +67,16 @@ Record SQLite3::Cursor::fetchOne() {
         {
         case SQLITE_ERROR: case SQLITE_MISUSE: {
           std::string error = sqlite3_errmsg(owner.db);
-                throw UnknownError("step failed: " +toString(status)  + error);
-            }
+	  throw UnknownError("step failed: " +toString(status)  + error);
+	}
         case SQLITE_DONE: return Record(); break;
         case SQLITE_BUSY: case SQLITE_LOCKED:
-            usleep(5000);
-            busy = true;
-            break;
+	  std::this_thread::sleep_for(std::chrono::microseconds(5000) );
+	  busy = true;
+	  break;
         case SQLITE_ROW:
-            busy = false;
-            break;
+	  busy = false;
+	  break;
         }
     } while (busy);
     int columnNum = sqlite3_data_count(stmt);
@@ -110,7 +101,7 @@ SQLite3::SQLite3(const string& connInfo) noexcept(false) //throw(DatabaseError)
 , beginTrans("BEGIN")
 {
   vector<string> params = split(connInfo,";");
-  string database;
+  string database = ":memory:";
   for (size_t i = 0; i < params.size(); i++) {
     vector<string> param = split(params[i], "=");
     if (param.size() == 1)
@@ -190,7 +181,7 @@ Backend::Result* SQLite3::execute(const string& query) const {
     switch(status) {         
       case SQLITE_BUSY: 
       case SQLITE_LOCKED: 
-        usleep(250000); 
+        std::this_thread::sleep_for(std::chrono::microseconds(250000) );
         break; 
       case SQLITE_OK: break;
       default: 
@@ -216,8 +207,8 @@ Backend::Cursor* SQLite3::cursor(const string& query) const {
             switch(status) {
             case SQLITE_BUSY: 
             case SQLITE_LOCKED: 
-                usleep(250000); 
-                break;
+	      std::this_thread::sleep_for(std::chrono::microseconds(250000) );
+	      break;
             default: throwError(status);
             }
         }
@@ -230,5 +221,3 @@ SQLite3::~SQLite3() {
     if (db)
         sqlite3_close(db);
 }
-
-#endif

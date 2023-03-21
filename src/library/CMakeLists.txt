@@ -91,41 +91,46 @@ else(LITESQL_USE_SYSTEM_SQLITE AND SQLITE3_FOUND)
 endif(LITESQL_USE_SYSTEM_SQLITE AND SQLITE3_FOUND)
 
 if (LITESQL_WITH_SQLITE3)
-  add_library(${LIBNAME}_sqlite STATIC
-              sqlite3/sqlite3_backend.cpp
-              sqlite3/sqlite3.hpp)
-  target_link_libraries(${LIBNAME}_sqlite PRIVATE ${SQLITE3_LIBRARIES} litesql-util)
-  target_include_directories(${LIBNAME}_sqlite PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-#  install(TARGETS ${LIBNAME}_sqlite  EXPORT ${LIBNAME}_sqlite
-#            RUNTIME DESTINATION lib
-#            LIBRARY DESTINATION lib
-#            ARCHIVE DESTINATION lib/static
-#            COMPONENT devel)
-#  install(EXPORT ${LIBNAME}_sqlite DESTINATION lib)
+  add_library(${LIBNAME}_sqlite3)
+  target_sources(${LIBNAME}_sqlite3 PRIVATE sqlite3/sqlite3_backend.cpp)
+  target_include_directories(${LIBNAME}_sqlite3 PRIVATE ${SQLITE3_INCLUDE_DIR})
+  target_link_directories(${LIBNAME}_sqlite3 PUBLIC ${SQLITE3_LIBRARY_DIR})
+  target_link_libraries(${LIBNAME}_sqlite3 PUBLIC ${SQLITE3_LIBRARIES})
+
   if (MSVC)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_sqlited.lib DESTINATION lib/static COMPONENT devel)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_sqlited.lib
+      DESTINATION lib/static
+      COMPONENT devel)
   endif(MSVC)
 
-  ###########################
-  # backend as shared library
-  ###########################
-  add_library(${LIBNAME}_backend_sqlite3 SHARED 
-    sqlite3/sqlite3_backend.cpp 
-    sqlite3/sqlite3.hpp sqlite3/sqlite3_backend_plugin.cpp
-  )
-  target_include_directories(${LIBNAME}_backend_sqlite3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(${LIBNAME}_backend_sqlite3 PRIVATE litesql PRIVATE litesql-util PRIVATE ${SQLITE3_LIBRARIES})
-
+  if (LITESQL_WITH_BACKEND_PLUGINS)
+    ###########################
+    # backend as shared library
+    ###########################
+    add_library(${LIBNAME}_backend_sqlite3 SHARED 
+      sqlite3/sqlite3_backend.cpp 
+      sqlite3/sqlite3.hpp sqlite3/sqlite3_backend_plugin.cpp
+    )
+    target_include_directories(${LIBNAME}_backend_sqlite3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(${LIBNAME}_backend_sqlite3
+      PRIVATE litesql
+      PRIVATE litesql-util
+      PRIVATE ${SQLITE3_LIBRARIES})
+  endif()
 endif(LITESQL_WITH_SQLITE3)
 
 ##############################################################################
 # litesql mysql library
 ##############################################################################
 if (LITESQL_WITH_MYSQL)
-  add_library(  ${LIBNAME}_mysql SHARED
-                        mysql/mysql.cpp
-   
-  )
+  target_sources(${LIBNAME} PRIVATE mysql/mysql.cpp)
+  target_include_directories(${LIBNAME} PRIVATE ${MYSQL_INCLUDE_DIR})
+  target_link_directories(${LIBNAME} PUBLIC ${MYSQL_LIBRARY_DIR})
+  target_link_libraries(${LIBNAME} PUBLIC ${MYSQL_LIBRARIES})
+endif()
+
+if (LITESQL_WITH_MYSQL AND LITESQL_WITH_BACKEND_PLUGINS)
+  add_library(  ${LIBNAME}_mysql SHARED  mysql/mysql.cpp)
   install(TARGETS ${LIBNAME}_mysql  EXPORT ${LIBNAME}_mysql 
             RUNTIME DESTINATION lib 
             LIBRARY DESTINATION lib
@@ -136,17 +141,21 @@ if (MSVC)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_mysqld.lib DESTINATION lib/static COMPONENT devel)
 endif(MSVC)
 
-endif (LITESQL_WITH_MYSQL)
+endif (LITESQL_WITH_MYSQL AND LITESQL_WITH_BACKEND_PLUGINS)
 
 ##############################################################################
 # litesql oracle library
 ##############################################################################
 if (LITESQL_WITH_OCILIB)
+  target_sources(${LIBNAME} PRIVATE ocilib_backend.cpp)
+endif()
+
+if (LITESQL_WITH_OCILIB AND LITESQL_WITH_BACKEND_PLUGINS)
   add_library(  ${LIBNAME}_ocilib SHARED
                         ocilib_backend.cpp
                         ocilib_backend.hpp
-   
   )
+
   install(TARGETS ${LIBNAME}_ocilib  EXPORT ${LIBNAME}_ocilib 
             RUNTIME DESTINATION lib 
             LIBRARY DESTINATION lib
@@ -157,15 +166,16 @@ if (MSVC)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_ocilibd.lib DESTINATION lib/static COMPONENT devel)
 endif(MSVC)
 
-endif (LITESQL_WITH_OCILIB)
+endif (LITESQL_WITH_OCILIB AND LITESQL_WITH_BACKEND_PLUGINS)
 
 ##############################################################################
 # litesql postgres library
 ##############################################################################
 if (LITESQL_WITH_POSTGRES)
-  add_library(  ${LIBNAME}_postgresql SHARED
-                postgresql.cpp 
-  )
+  target_sources(${LIBNAME} PRIVATE postgresql.cpp)
+endif()
+if (LITESQL_WITH_POSTGRES AND LITESQL_WITH_BACKEND_PLUGINS)
+  add_library(  ${LIBNAME}_postgresql SHARED postgresql.cpp)
   install(TARGETS ${LIBNAME}_postgresql EXPORT ${LIBNAME}_postgresql  
             RUNTIME DESTINATION lib 
             LIBRARY DESTINATION lib
@@ -174,12 +184,12 @@ if (LITESQL_WITH_POSTGRES)
 if (MSVC)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_postgresqld.lib DESTINATION lib/static COMPONENT devel)
 endif(MSVC)
-endif (LITESQL_WITH_POSTGRES)
+endif (LITESQL_WITH_POSTGRES AND LITESQL_WITH_BACKEND_PLUGINS)
 
 ##############################################################################
 # litesql odbc library
 ##############################################################################
-if (LITESQL_WITH_ODBC)
+if (LITESQL_WITH_ODBC AND LITESQL_WITH_BACKEND_PLUGINS)
   add_library(  ${LIBNAME}_odbc SHARED
                       odbc_backend.cpp 
                       odbc_backend.hpp 
@@ -193,5 +203,5 @@ if (MSVC)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_odbcd.lib DESTINATION lib/static COMPONENT devel)
 endif(MSVC)
 
-endif (LITESQL_WITH_ODBC)
+endif (LITESQL_WITH_ODBC AND LITESQL_WITH_BACKEND_PLUGINS)
 
