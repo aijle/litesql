@@ -91,32 +91,16 @@ else(LITESQL_USE_SYSTEM_SQLITE AND SQLITE3_FOUND)
 endif(LITESQL_USE_SYSTEM_SQLITE AND SQLITE3_FOUND)
 
 if (LITESQL_WITH_SQLITE3)
-  target_sources(${LIBNAME} 
-  PRIVATE  
-    sqlite3/sqlite3_backend.cpp)
-  target_include_directories(${LIBNAME}
-  PRIVATE
-  ${SQLITE3_INCLUDE_DIR}
-  )
-  target_link_directories(${LIBNAME}
-  PUBLIC
-  ${SQLITE3_LIBRARIY_DIR}
-  )
-  target_link_libraries(${LIBNAME} PUBLIC ${SQLITE3_LIBRARIES})
+  add_library(${LIBNAME}_sqlite3)
+  target_sources(${LIBNAME}_sqlite3 PRIVATE sqlite3/sqlite3_backend.cpp)
+  target_include_directories(${LIBNAME}_sqlite3 PRIVATE ${SQLITE3_INCLUDE_DIR})
+  target_link_directories(${LIBNAME}_sqlite3 PUBLIC ${SQLITE3_LIBRARY_DIR})
+  target_link_libraries(${LIBNAME}_sqlite3 PUBLIC ${SQLITE3_LIBRARIES})
 
-  # add_library(${LIBNAME}_sqlite STATIC
-  #             sqlite3/sqlite3_backend.cpp
-  #             sqlite3/sqlite3.hpp)
-  # target_link_libraries(${LIBNAME}_sqlite PRIVATE ${SQLITE3_LIBRARIES} litesql-util)
-  # target_include_directories(${LIBNAME}_sqlite PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-#  install(TARGETS ${LIBNAME}_sqlite  EXPORT ${LIBNAME}_sqlite
-#            RUNTIME DESTINATION lib
-#            LIBRARY DESTINATION lib
-#            ARCHIVE DESTINATION lib/static
-#            COMPONENT devel)
-#  install(EXPORT ${LIBNAME}_sqlite DESTINATION lib)
   if (MSVC)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_sqlited.lib DESTINATION lib/static COMPONENT devel)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/debug/${LIBNAME}_sqlited.lib
+      DESTINATION lib/static
+      COMPONENT devel)
   endif(MSVC)
 
   if (LITESQL_WITH_BACKEND_PLUGINS)
@@ -128,7 +112,10 @@ if (LITESQL_WITH_SQLITE3)
       sqlite3/sqlite3.hpp sqlite3/sqlite3_backend_plugin.cpp
     )
     target_include_directories(${LIBNAME}_backend_sqlite3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(${LIBNAME}_backend_sqlite3 PRIVATE litesql PRIVATE litesql-util PRIVATE ${SQLITE3_LIBRARIES})
+    target_link_libraries(${LIBNAME}_backend_sqlite3
+      PRIVATE litesql
+      PRIVATE litesql-util
+      PRIVATE ${SQLITE3_LIBRARIES})
   endif()
 endif(LITESQL_WITH_SQLITE3)
 
@@ -136,27 +123,14 @@ endif(LITESQL_WITH_SQLITE3)
 # litesql mysql library
 ##############################################################################
 if (LITESQL_WITH_MYSQL)
-  target_sources(${LIBNAME} 
-  PRIVATE  
-    mysql/mysql.cpp)
-  target_include_directories(${LIBNAME}
-  PRIVATE
-    ${MYSQL_INCLUDE_DIR}
-  )
-  target_link_directories(${LIBNAME}
-  PUBLIC
-    ${MYSQL_LIBRARY_DIR}
-  )
-  target_link_libraries(${LIBNAME}
-  PUBLIC
-    ${MYSQL_LIBRARIES}
-  )
+  target_sources(${LIBNAME} PRIVATE mysql/mysql.cpp)
+  target_include_directories(${LIBNAME} PRIVATE ${MYSQL_INCLUDE_DIR})
+  target_link_directories(${LIBNAME} PUBLIC ${MYSQL_LIBRARY_DIR})
+  target_link_libraries(${LIBNAME} PUBLIC ${MYSQL_LIBRARIES})
 endif()
+
 if (LITESQL_WITH_MYSQL AND LITESQL_WITH_BACKEND_PLUGINS)
-  add_library(  ${LIBNAME}_mysql SHARED
-                        mysql/mysql.cpp
-   
-  )
+  add_library(  ${LIBNAME}_mysql SHARED  mysql/mysql.cpp)
   install(TARGETS ${LIBNAME}_mysql  EXPORT ${LIBNAME}_mysql 
             RUNTIME DESTINATION lib 
             LIBRARY DESTINATION lib
@@ -173,16 +147,15 @@ endif (LITESQL_WITH_MYSQL AND LITESQL_WITH_BACKEND_PLUGINS)
 # litesql oracle library
 ##############################################################################
 if (LITESQL_WITH_OCILIB)
-  target_sources(${LIBNAME} 
-  PRIVATE  
-    ocilib_backend.cpp)
+  target_sources(${LIBNAME} PRIVATE ocilib_backend.cpp)
 endif()
+
 if (LITESQL_WITH_OCILIB AND LITESQL_WITH_BACKEND_PLUGINS)
   add_library(  ${LIBNAME}_ocilib SHARED
                         ocilib_backend.cpp
                         ocilib_backend.hpp
-   
   )
+
   install(TARGETS ${LIBNAME}_ocilib  EXPORT ${LIBNAME}_ocilib 
             RUNTIME DESTINATION lib 
             LIBRARY DESTINATION lib
@@ -199,14 +172,10 @@ endif (LITESQL_WITH_OCILIB AND LITESQL_WITH_BACKEND_PLUGINS)
 # litesql postgres library
 ##############################################################################
 if (LITESQL_WITH_POSTGRES)
-  target_sources(${LIBNAME} 
-  PRIVATE  
-    postgresql.cpp)
+  target_sources(${LIBNAME} PRIVATE postgresql.cpp)
 endif()
 if (LITESQL_WITH_POSTGRES AND LITESQL_WITH_BACKEND_PLUGINS)
-  add_library(  ${LIBNAME}_postgresql SHARED
-                postgresql.cpp 
-  )
+  add_library(  ${LIBNAME}_postgresql SHARED postgresql.cpp)
   install(TARGETS ${LIBNAME}_postgresql EXPORT ${LIBNAME}_postgresql  
             RUNTIME DESTINATION lib 
             LIBRARY DESTINATION lib

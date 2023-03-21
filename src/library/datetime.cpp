@@ -205,17 +205,26 @@ string Time::asString(const string& format) const {
 DateTime::DateTime(time_t t) {
     value =  (t==0) ? time(NULL) : t;
 }
+int DateTime::day() const {
+    return timeStruct().day();
+}
+int DateTime::month() const {
+    return timeStruct().month();
+}
+int DateTime::year() const {
+    return timeStruct().year();
+}
 int DateTime::hour() const {
-    return TimeStruct(value).hour();
+    return timeStruct().hour();
 }
 int DateTime::min() const {
-    return TimeStruct(value).min();
+    return timeStruct().min();
 }
 int DateTime::sec() const {
-    return TimeStruct(value).sec();
+    return timeStruct().sec();
 }
 time_t DateTime::timeStamp() const {
-    return TimeStruct(value).timeStamp();
+    return timeStruct().timeStamp();
 }
 TimeStruct DateTime::timeStruct() const {
     return TimeStruct(value);
